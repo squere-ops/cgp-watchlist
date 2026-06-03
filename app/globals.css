@@ -1,0 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Instrument+Sans:wght@400;500;600&display=swap');
+:root{--ink:#0f0e0d;--paper:#f5f2ed;--cream:#ede9e2;--gold:#b8975a;--gold-light:#d4b57e;--sage:#6b7c6e;--sage-light:#a8b8aa;--rust:#c45c3a;--steel:#3d5a7a;--green:#5a9e6f;--border:rgba(15,14,13,0.12);--border-strong:rgba(15,14,13,0.25)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:'Instrument Sans',sans-serif;min-height:100vh}
+a{text-decoration:none;color:inherit}
+input,select,textarea{font-family:'Instrument Sans',sans-serif}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--cream)}
+::-webkit-scrollbar-thumb{background:var(--sage-light);border-radius:3px}
