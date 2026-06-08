@@ -75,7 +75,7 @@ function AnalysePage() {
         <div>
           <div style={{background:'linear-gradient(135deg,#1a1815,#2d2820)',borderRadius:4,padding:'32px 40px',marginBottom:24,position:'relative',overflow:'hidden'}}>
             <div style={{position:'absolute',top:-50,right:-50,width:200,height:200,background:'radial-gradient(circle,rgba(184,151,90,.15),transparent 70%)'}}/>
-            <div style={{fontFamily:'DM Mono, monospace',fontSize:10,letterSpacing:3,textTransform:'uppercase',color:'#b8975a',marginBottom:8}}>✦ Claude Opus 4.8</div>
+            <div style={{fontFamily:'DM Mono, monospace',fontSize:10,letterSpacing:3,textTransform:'uppercase',color:'#b8975a',marginBottom:8}}>✦ Claude Sonnet 4.6</div>
             <div style={{fontFamily:'DM Serif Display, serif',fontSize:28,color:'#f5f2ed',marginBottom:6}}>Analyseur de fonds</div>
             <div style={{fontSize:13,color:'rgba(245,242,237,.5)',lineHeight:1.6}}>Entrez un ISIN pour une analyse approfondie — verdict ENTRER / ATTENDRE / ÉVITER avec contexte macro en temps réel.</div>
           </div>
@@ -104,7 +104,7 @@ function AnalysePage() {
 
           {loading&&<div style={{...S.card,display:'flex',alignItems:'center',justifyContent:'center',padding:50,gap:16,marginTop:16}}>
             <div style={{display:'flex',gap:8}}>{[0,1,2].map(i=><div key={i} style={{width:8,height:8,borderRadius:'50%',background:'#b8975a',animationDelay:`${i*0.2}s`}}/>)}</div>
-            <span style={{fontFamily:'DM Mono, monospace',fontSize:11,color:'#6b7c6e'}}>Analyse Opus 4.8 + recherche web…</span>
+            <span style={{fontFamily:'DM Mono, monospace',fontSize:11,color:'#6b7c6e'}}>Analyse Sonnet 4.6 + recherche web…</span>
           </div>}
 
           {result&&!loading&&!result.error&&(
