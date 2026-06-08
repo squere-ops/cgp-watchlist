@@ -17,6 +17,7 @@ export default function FondsPage() {
   const [detailAnalyse, setDetailAnalyse] = useState<any>(null)
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
+  const [vlLoading, setVlLoading] = useState<string[]>([])
 
   const load = useCallback(async () => {
     const [{ data: f }, { data: h }, { data: a }] = await Promise.all([
