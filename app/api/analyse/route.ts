@@ -57,7 +57,8 @@ export async function POST(req: NextRequest) {
     }
 
     const analyse = JSON.parse(clean.slice(start, end + 1))
-    if (!['ENTRER','ATTENDRE','ÉVITER'].includes(analyse.verdict)) analyse.verdict = 'ATTENDRE'
+    const verdictMap: any = {'ENTRER':'ENTRER','ATTENDRE':'ATTENDRE','ÉVITER':'ÉVITER','NEUTRE':'ATTENDRE','NE_PAS_ENTRER':'ÉVITER','EVITER':'ÉVITER'}
+    analyse.verdict = verdictMap[analyse.verdict] || 'ATTENDRE'
     const { data: fund } = await supabase.from('funds').select('id').eq('isin', isin).single()
     try {
       await supabase.from('analyse_history').insert({
