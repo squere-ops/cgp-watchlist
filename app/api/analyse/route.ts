@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const prompt = 'Recherche le fonds dont le code ISIN est EXACTEMENT ' + isin + '. Utilise cet ISIN pour trouver le bon fonds sur quantalys.com ou morningstar.fr. Ne confonds pas avec un autre fonds. Profil investisseur: ' + profile + ', horizon: ' + horizon + '. Reponds en JSON uniquement sans backticks: {"nom":"nom exact du fonds","isin":"' + isin + '","gestionnaire":"societe de gestion","categorie":"type","verdict":"ENTRER","verdict_resume":"resume","contexte_macro":"contexte","analyse_fonds":"analyse","opportunite":"opportunite","risques":["r1","r2"],"catalyseurs":["c1","c2"],"adequation_profil":"adequation","signaux":{"momentum":"positif","valorisation":"attractive","risque_devise":"non","sensibilite_taux":"moyenne","liquidite":"haute"}}'
+    const prompt = 'Recherche le fonds ISIN ' + isin + ' sur quantalys.com. Profil: ' + profile + ', horizon: ' + horizon + '. Reponds avec UNIQUEMENT du JSON brut, sans backticks, sans markdown, juste le JSON: {"nom":"...","isin":"' + isin + '","gestionnaire":"...","categorie":"...","verdict":"ENTRER","verdict_resume":"...","contexte_macro":"...","analyse_fonds":"...","opportunite":"...","risques":["..."],"catalyseurs":["..."],"adequation_profil":"...","signaux":{"momentum":"positif","valorisation":"attractive","risque_devise":"non","sensibilite_taux":"moyenne","liquidite":"haute"}}'
 
     const response = await (client.messages.create as any)({
       model: 'claude-sonnet-4-6',
@@ -50,16 +50,16 @@ export async function POST(req: NextRequest) {
       if ((block as any).type === 'text') text += (block as any).text
     }
 
-    const clean = text.replace(/[`]{3}json/g, '').replace(/[`]{3}/g, '').trim()
-    const start = clean.indexOf('{')
-    const end = clean.lastIndexOf('}')
+    const start = text.indexOf('{')
+    const end = text.lastIndexOf('}')
     if (start === -1 || end === -1) {
-      return NextResponse.json({ error: 'Pas de JSON: ' + text.slice(0, 200) }, { status: 500 })
+      return NextResponse.json({ error: 'Pas de JSON' }, { status: 500 })
     }
 
-    const analyse = JSON.parse(clean.slice(start, end + 1))
-    const verdictMap: any = {'ENTRER':'ENTRER','ATTENDRE':'ATTENDRE','ÉVITER':'ÉVITER','EVITER':'ÉVITER','NEUTRE':'ATTENDRE','NE_PAS_ENTRER':'ÉVITER'}
-    analyse.verdict = verdictMap[analyse.verdict] || 'ATTENDRE'
+    const analyse = JSON.parse(text.slice(start, end + 1))
+    const vm: any = {ENTRER:'ENTRER',ATTENDRE:'ATTENDRE',NEUTRE:'ATTENDRE',EVITER:'EVITER'}
+    analyse.verdict = vm[analyse.verdict?.toUpperCase()] || 'ATTENDRE'
+    if (analyse.verdict === 'EVITER') analyse.verdict = 'ÉVITER'
 
     const { data: fund } = await supabase.from('funds').select('id').eq('isin', isin).single()
     try {
