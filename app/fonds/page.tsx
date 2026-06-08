@@ -40,6 +40,8 @@ export default function FondsPage() {
     (!search || f.name.toLowerCase().includes(search.toLowerCase()) || (f.isin || '').includes(search.toUpperCase()))
   )
 
+  const deleteFund = async (id: string) => { if (!confirm("Supprimer ce fonds ?")) return; await supabase.from("funds").delete().eq("id", id); setEditFund(null); load(); };
+
   const saveEdit = async () => {
     if (!editFund) return
     await supabase.from('funds').update({
@@ -225,7 +227,7 @@ export default function FondsPage() {
             ))}
             <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
               <button style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', padding: '10px 20px', borderRadius: 2, cursor: 'pointer', border: 'none', background: '#0f0e0d', color: '#f5f2ed' }} onClick={saveEdit}>Sauvegarder</button>
-              <button style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, padding: '10px 20px', borderRadius: 2, cursor: 'pointer', background: 'none', color: '#6b7c6e', border: '1px solid rgba(15,14,13,0.12)' }} onClick={() => setEditFund(null)}>Annuler</button>
+              <button style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, padding: '10px 20px', borderRadius: 2, cursor: 'pointer', background: 'none', color: '#6b7c6e', border: '1px solid rgba(15,14,13,0.12)' }} onClick={() => setEditFund(null)}>Annuler</button><button style={{ fontFamily: "DM Mono, monospace", fontSize: 11, padding: "10px 20px", borderRadius: 2, cursor: "pointer", background: "#c45c3a", color: "white", border: "none", marginLeft: "auto" }} onClick={() => deleteFund(editFund.id)}>🗑 Supprimer</button>
             </div>
           </div>
         </div>
