@@ -32,17 +32,13 @@ export async function POST(req: NextRequest) {
         .order('created_at', { ascending: false })
         .limit(1)
       if (cached && cached.length > 0) {
-        return NextResponse.json({ ...cached[0].analyse_json, cached: true, cached_at: cached[0].created_at })
+        return NextResponse.json({ ...cached[0].analyse_json, cached: true })
       }
     }
 
-    const prompt = `Tu es analyste financier senior CGP français. Analyse le fonds ISIN ${isin}.
-Cherche sur quantalys.com, morningstar.fr, boursorama.com et les sites des societes de gestion.
-Profil: ${profile}, horizon: ${horizon}. Date: ${new Date().toLocaleDateString('fr-FR')}.
-Reponds UNIQUEMENT en JSON valide sans texte avant ou apres:
-{"nom":"...","isin":"${isin}","gestionnaire":"...","categorie":"...","verdict":"ENTRER","verdict_resume":"...","contexte_macro":"...","analyse_fonds":"...","opportunite":"...","risques":["..."],"catalyseurs":["..."],"adequation_profil":"...","signaux":{"momentum":"positif","valorisation":"attractive","risque_devise":"non","sensibilite_taux":"moyenne","liquidite":"haute"}}`
+    const prompt = 'Tu es analyste CGP français. Analyse le fonds ISIN ' + isin + ' (profil ' + profile + ', horizon ' + horizon + '). Reponds avec un JSON valide uniquement, sans texte avant ou apres: {"nom":"...","isin":"' + isin + '","gestionnaire":"...","categorie":"...","verdict":"ENTRER","verdict_resume":"...","contexte_macro":"...","analyse_fonds":"...","opportunite":"...","risques":["..."],"catalyseurs":["..."],"adequation_profil":"...","signaux":{"momentum":"positif","valorisation":"attractive","risque_devise":"non","sensibilite_taux":"moyenne","liquidite":"haute"}}'
 
-    const response = await (client.messages.create as any)({
+    const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }],
@@ -50,13 +46,13 @@ Reponds UNIQUEMENT en JSON valide sans texte avant ou apres:
 
     let text = ''
     for (const block of response.content) {
-      if ((block as any).type === 'text') text += (block as any).text
+      if (block.type === 'text') text += block.text
     }
 
     const start = text.indexOf('{')
     const end = text.lastIndexOf('}')
     if (start === -1 || end === -1) {
-      return NextResponse.json({ error: 'Pas de JSON' }, { status: 500 })
+      return NextResponse.json({ error: 'Reponse: ' + text.slice(0, 300) }, { status: 500 })
     }
 
     const analyse = JSON.parse(text.slice(start, end + 1))
