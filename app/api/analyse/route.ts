@@ -13,15 +13,21 @@ const supabase = createClient(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const isin = body.isin || ''
-    const profile = body.profile || 'Equilibre'
-    const horizon = body.horizon || '2-5 ans'
+    const isin = String(body.isin || '').trim().toUpperCase()
+    const profile = String(body.profile || 'Equilibre')
+    const horizon = String(body.horizon || '2-5 ans')
 
     if (!isin || isin.length < 10) {
       return NextResponse.json({ error: 'ISIN invalide' }, { status: 400 })
     }
 
-    const prompt = 'Tu es analyste financier CGP. Analyse le fonds ISIN ' + isin + '. Profil: ' + profile + '. Horizon: ' + horizon + '. Reponds UNIQUEMENT avec du JSON valide, sans texte avant ou apres, sans backticks. Format: {"nom":"...","isin":"' + isin + '","gestionnaire":"...","categorie":"...","verdict":"ENTRER","verdict_resume":"...","contexte_macro":"...","analyse_fonds":"...","opportunite":"...","risques":["..."],"catalyseurs":["..."],"adequation_profil":"...","signaux":{"momentum":"positif","valorisation":"attractive","risque_devise":"non","sensibilite_taux":"moyenne","liquidite":"haute"}}'
+    const prompt = `Tu es un analyste financier senior CGP français. Analyse le fonds ISIN ${isin}.
+Cherche sur quantalys.com, morningstar.fr, boursorama.com, linxea.com et les sites des societes de gestion.
+Profil investisseur: ${profile}, horizon: ${horizon}.
+Date: ${new Date().toLocaleDateString('fr-FR')}.
+
+Reponds UNIQUEMENT avec un objet JSON valide, aucun texte avant ou apres:
+{"nom":"nom complet du fonds","isin":"${isin}","gestionnaire":"societe de gestion","categorie":"classe actif","verdict":"ENTRER","verdict_resume":"resume en 1 phrase","contexte_macro":"analyse macro actuelle","analyse_fonds":"analyse detaillee du fonds","opportunite":"pourquoi entrer maintenant","risques":["risque 1","risque 2","risque 3"],"catalyseurs":["catalyseur 1","catalyseur 2"],"adequation_profil":"adequation avec le profil","signaux":{"momentum":"positif ou negatif ou neutre","valorisation":"attractive ou chère ou neutre","risque_devise":"oui ou non","sensibilite_taux":"haute ou moyenne ou faible","liquidite":"haute ou moyenne ou faible"}}`
 
     const response = await (client.messages.create as any)({
       model: 'claude-opus-4-8',
@@ -35,12 +41,13 @@ export async function POST(req: NextRequest) {
       if ((block as any).type === 'text') text += (block as any).text
     }
 
-    const match = text.match(/\{[\s\S]*\}/)
-    if (!match) {
-      return NextResponse.json({ error: 'Pas de JSON: ' + text.slice(0, 100) }, { status: 500 })
+    const start = text.indexOf('{')
+    const end = text.lastIndexOf('}')
+    if (start === -1 || end === -1) {
+      return NextResponse.json({ error: 'Pas de JSON: ' + text.slice(0, 200) }, { status: 500 })
     }
 
-    const analyse = JSON.parse(match[0])
+    const analyse = JSON.parse(text.slice(start, end + 1))
 
     const { data: fund } = await supabase.from('funds').select('id').eq('isin', isin).single()
     try {
@@ -53,7 +60,6 @@ export async function POST(req: NextRequest) {
     } catch {}
 
     return NextResponse.json(analyse)
-
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Erreur inconnue' }, { status: 500 })
   }
