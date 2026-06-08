@@ -16,22 +16,35 @@ export async function POST(req: NextRequest) {
     const isin = String(body.isin || '').trim().toUpperCase()
     const profile = String(body.profile || 'Equilibre')
     const horizon = String(body.horizon || '2-5 ans')
+    const force = body.force === true
 
     if (!isin || isin.length < 10) {
       return NextResponse.json({ error: 'ISIN invalide' }, { status: 400 })
     }
 
-    const prompt = `Tu es un analyste financier senior CGP français. Analyse le fonds ISIN ${isin}.
-Cherche sur quantalys.com, morningstar.fr, boursorama.com, linxea.com et les sites des societes de gestion.
-Profil investisseur: ${profile}, horizon: ${horizon}.
-Date: ${new Date().toLocaleDateString('fr-FR')}.
+    if (!force) {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      const { data: cached } = await supabase
+        .from('analyse_history')
+        .select('*')
+        .eq('isin', isin)
+        .gte('created_at', sevenDaysAgo)
+        .order('created_at', { ascending: false })
+        .limit(1)
+      if (cached && cached.length > 0) {
+        return NextResponse.json({ ...cached[0].analyse_json, cached: true, cached_at: cached[0].created_at })
+      }
+    }
 
-Reponds UNIQUEMENT avec un objet JSON valide, aucun texte avant ou apres:
-{"nom":"nom complet du fonds","isin":"${isin}","gestionnaire":"societe de gestion","categorie":"classe actif","verdict":"ENTRER","verdict_resume":"resume en 1 phrase","contexte_macro":"analyse macro actuelle","analyse_fonds":"analyse detaillee du fonds","opportunite":"pourquoi entrer maintenant","risques":["risque 1","risque 2","risque 3"],"catalyseurs":["catalyseur 1","catalyseur 2"],"adequation_profil":"adequation avec le profil","signaux":{"momentum":"positif ou negatif ou neutre","valorisation":"attractive ou chère ou neutre","risque_devise":"oui ou non","sensibilite_taux":"haute ou moyenne ou faible","liquidite":"haute ou moyenne ou faible"}}`
+    const prompt = `Tu es analyste financier senior CGP français. Analyse le fonds ISIN ${isin}.
+Cherche sur quantalys.com, morningstar.fr, boursorama.com et les sites des societes de gestion.
+Profil: ${profile}, horizon: ${horizon}. Date: ${new Date().toLocaleDateString('fr-FR')}.
+Reponds UNIQUEMENT en JSON valide sans texte avant ou apres:
+{"nom":"...","isin":"${isin}","gestionnaire":"...","categorie":"...","verdict":"ENTRER","verdict_resume":"...","contexte_macro":"...","analyse_fonds":"...","opportunite":"...","risques":["..."],"catalyseurs":["..."],"adequation_profil":"...","signaux":{"momentum":"positif","valorisation":"attractive","risque_devise":"non","sensibilite_taux":"moyenne","liquidite":"haute"}}`
 
     const response = await (client.messages.create as any)({
-      model: 'claude-opus-4-8',
-      max_tokens: 2000,
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1500,
       tools: [{ type: 'web_search_20250305', name: 'web_search' }],
       messages: [{ role: 'user', content: prompt }],
     })
@@ -44,23 +57,19 @@ Reponds UNIQUEMENT avec un objet JSON valide, aucun texte avant ou apres:
     const start = text.indexOf('{')
     const end = text.lastIndexOf('}')
     if (start === -1 || end === -1) {
-      return NextResponse.json({ error: 'Pas de JSON: ' + text.slice(0, 200) }, { status: 500 })
+      return NextResponse.json({ error: 'Pas de JSON' }, { status: 500 })
     }
 
     const analyse = JSON.parse(text.slice(start, end + 1))
-
     const { data: fund } = await supabase.from('funds').select('id').eq('isin', isin).single()
     try {
       await supabase.from('analyse_history').insert({
-        fund_id: fund?.id || null,
-        isin,
-        verdict: analyse.verdict,
-        analyse_json: analyse,
+        fund_id: fund?.id || null, isin, verdict: analyse.verdict, analyse_json: analyse,
       })
     } catch {}
 
     return NextResponse.json(analyse)
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Erreur inconnue' }, { status: 500 })
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
