@@ -18,36 +18,29 @@ export async function POST(req: NextRequest) {
     const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
     const { data: recent } = await supabase.from('veille_log').select('*').gte('created_at', sixHoursAgo).order('created_at', { ascending: false }).limit(1)
     if (recent && recent.length > 0) {
-      return NextResponse.json({ ...recent[0].veille_json, cached: true, cached_at: recent[0].created_at })
+      return NextResponse.json({ ...recent[0].veille_json, cached: true })
     }
 
-    const fundsList = funds.map((f: any) => `- ${f.name} (${f.category}${f.isin ? ', ISIN: ' + f.isin : ''})`).join('\n')
-
+    const fundsList = funds.map((f: any) => `- ${f.name} (${f.category})`).join('\n')
     const prompt = `Tu es analyste financier senior CGP français. Date: ${new Date().toLocaleDateString('fr-FR')}.
-Watchlist CGP:
-${fundsList}
+Watchlist: ${fundsList}
+Fais un briefing macro du matin base sur ta connaissance des marches. Reponds JSON uniquement:
+{"resume_marche":"2-3 phrases sur les marches","niveau_risque_global":"modere","alertes":[{"niveau":"attention","fonds_concernes":["nom"],"titre":"titre","detail":"detail","action_recommandee":"action"}],"opportunites":[{"fonds_concernes":["nom"],"titre":"titre","detail":"detail"}],"themes_macro":[{"theme":"theme","tendance":"stable","impact":"impact"}],"agenda_macro":[{"date":"JJ/MM","evenement":"evenement","impact_potentiel":"impact"}]}`
 
-Effectue une veille macro et micro recente et identifie les impacts sur ces fonds.
-Reponds UNIQUEMENT avec un objet JSON valide, aucun texte avant ou apres:
-{"resume_marche":"resume en 2-3 phrases","niveau_risque_global":"faible ou modere ou eleve","alertes":[{"niveau":"attention ou urgent","fonds_concernes":["nom"],"titre":"titre alerte","detail":"detail","action_recommandee":"action"}],"opportunites":[{"fonds_concernes":["nom"],"titre":"titre","detail":"detail"}],"themes_macro":[{"theme":"theme","tendance":"hausse ou baisse ou stable","impact":"impact sur portefeuille"}],"agenda_macro":[{"date":"JJ/MM","evenement":"evenement","impact_potentiel":"impact"}]}`
-
-    const response = await (client.messages.create as any)({
+    const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 2500,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }],
     })
 
     let text = ''
     for (const block of response.content) {
-      if ((block as any).type === 'text') text += (block as any).text
+      if (block.type === 'text') text += block.text
     }
 
     const start = text.indexOf('{')
     const end = text.lastIndexOf('}')
-    if (start === -1 || end === -1) {
-      return NextResponse.json({ error: 'Pas de JSON' }, { status: 500 })
-    }
+    if (start === -1 || end === -1) return NextResponse.json({ error: 'Pas de JSON' }, { status: 500 })
 
     const veille = JSON.parse(text.slice(start, end + 1))
     await supabase.from('veille_log').insert({ veille_json: veille })
