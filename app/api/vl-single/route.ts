@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
     const start = text.indexOf('{')
     const end = text.lastIndexOf('}')
-    if (start === -1 || end === -1) return NextResponse.json({ error: 'VL non trouvee' }, { status: 500 })
+    if (start === -1 || end === -1) return NextResponse.json({ error: 'VL non trouvee', raw: text.slice(0,300) }, { status: 500 })
 
     const data = JSON.parse(text.slice(start, end + 1))
     if (data.vl) {
