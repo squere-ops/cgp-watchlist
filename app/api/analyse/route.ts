@@ -45,7 +45,6 @@ Reponds UNIQUEMENT en JSON valide sans texte avant ou apres:
     const response = await (client.messages.create as any)({
       model: 'claude-sonnet-4-6',
       max_tokens: 1500,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
       messages: [{ role: 'user', content: prompt }],
     })
 
