@@ -204,7 +204,19 @@ export default function FondsPage() {
                     </div>
                   ))}
 
-                  {aj?.risques?.length > 0 && (
+                  
+              {aj?.perf_historique && <div style={{ marginBottom: 14 }}>
+                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: '#b8975a', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Performances historiques</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 8 }}>
+                  {Object.entries(aj.perf_historique).map(([k,v]: any) => (
+                    <div key={k} style={{ background: 'white', padding: '10px 12px', borderRadius: 2, border: '1px solid rgba(15,14,13,0.12)', textAlign: 'center' }}>
+                      <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 9, color: '#6b7c6e', marginBottom: 4 }}>{k}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: String(v).startsWith('+') ? '#2d6e42' : String(v).startsWith('-') ? '#9e3a28' : '#6b7c6e' }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>}
+              {aj?.risques?.length > 0 && (
                     <div style={{ marginBottom: 16 }}>
                       <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: '#b8975a', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Risques</div>
                       <ul style={{ paddingLeft: 18 }}>{aj.risques.map((r: string, i: number) => <li key={i} style={{ fontSize: 13, lineHeight: 1.75, marginBottom: 4 }}>{r}</li>)}</ul>
