@@ -15,21 +15,12 @@ export async function POST(req: NextRequest) {
     const { funds } = await req.json()
     if (!funds?.length) return NextResponse.json({ error: 'Aucun fonds' }, { status: 400 })
 
-    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
-    const { data: recent } = await supabase.from('veille_log').select('*').gte('created_at', sixHoursAgo).order('created_at', { ascending: false }).limit(1)
-    if (recent && recent.length > 0) {
-      return NextResponse.json({ ...recent[0].veille_json, cached: true })
-    }
-
-    const fundsList = funds.map((f: any) => `- ${f.name} (${f.category})`).join('\n')
-    const prompt = `Tu es analyste financier senior CGP français. Date: ${new Date().toLocaleDateString('fr-FR')}.
-Watchlist: ${fundsList}
-Fais un briefing macro du matin base sur ta connaissance des marches. Reponds JSON uniquement:
-{"resume_marche":"2-3 phrases sur les marches","niveau_risque_global":"modere","alertes":[{"niveau":"attention","fonds_concernes":["nom"],"titre":"titre","detail":"detail","action_recommandee":"action"}],"opportunites":[{"fonds_concernes":["nom"],"titre":"titre","detail":"detail"}],"themes_macro":[{"theme":"theme","tendance":"stable","impact":"impact"}],"agenda_macro":[{"date":"JJ/MM","evenement":"evenement","impact_potentiel":"impact"}]}`
+    const fundsList = funds.slice(0, 3).map((f: any) => f.name).join(', ')
+    const prompt = `Briefing CGP du ${new Date().toLocaleDateString('fr-FR')} pour fonds: ${fundsList}. JSON: {"resume_marche":"marche actuel en 2 phrases","niveau_risque_global":"modere","alertes":[],"opportunites":[],"themes_macro":[{"theme":"taux BCE","tendance":"stable","impact":"favorable obligations"}],"agenda_macro":[{"date":"prochaine semaine","evenement":"reunions banques centrales","impact_potentiel":"modere"}]}`
 
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1500,
+      model: 'claude-haiku-4-5',
+      max_tokens: 800,
       messages: [{ role: 'user', content: prompt }],
     })
 
@@ -43,7 +34,6 @@ Fais un briefing macro du matin base sur ta connaissance des marches. Reponds JS
     if (start === -1 || end === -1) return NextResponse.json({ error: 'Pas de JSON' }, { status: 500 })
 
     const veille = JSON.parse(text.slice(start, end + 1))
-    await supabase.from('veille_log').insert({ veille_json: veille })
     return NextResponse.json(veille)
 
   } catch (err: any) {
