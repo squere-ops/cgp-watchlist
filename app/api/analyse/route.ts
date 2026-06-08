@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1500,
+      max_tokens: 2000,
       messages: [{ role: 'user', content: prompt }],
     })
 
@@ -56,7 +56,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Reponse: ' + text.slice(0, 300) }, { status: 500 })
     }
 
-    const analyse = JSON.parse(clean.slice(start, end + 1))
+    let analyse
+    try {
+      analyse = JSON.parse(clean.slice(start, end + 1))
+    } catch {
+      const fixed = clean.slice(start).replace(/,\s*$/, '').replace(/,\s*}/, '}')
+      analyse = JSON.parse(fixed.slice(0, fixed.lastIndexOf('}') + 1))
+    }
+    if (!analyse.verdict) analyse.verdict = 'ATTENDRE'
     const verdictMap: any = {'ENTRER':'ENTRER','ATTENDRE':'ATTENDRE','ÉVITER':'ÉVITER','NEUTRE':'ATTENDRE','NE_PAS_ENTRER':'ÉVITER','EVITER':'ÉVITER'}
     analyse.verdict = verdictMap[analyse.verdict] || 'ATTENDRE'
     const { data: fund } = await supabase.from('funds').select('id').eq('isin', isin).single()
