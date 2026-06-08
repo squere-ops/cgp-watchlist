@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const prompt = 'Recherche le fonds ISIN ' + isin + ' sur quantalys.com. Profil: ' + profile + ', horizon: ' + horizon + '. Reponds avec UNIQUEMENT du JSON brut, sans backticks, sans markdown, juste le JSON: {"nom":"...","isin":"' + isin + '","gestionnaire":"...","categorie":"...","verdict":"ENTRER","verdict_resume":"...","contexte_macro":"...","analyse_fonds":"...","opportunite":"...","risques":["..."],"catalyseurs":["..."],"adequation_profil":"...","signaux":{"momentum":"positif","valorisation":"attractive","risque_devise":"non","sensibilite_taux":"moyenne","liquidite":"haute"}}'
+    const prompt = 'Recherche le fonds ISIN ' + isin + ' sur quantalys.com. Profil: ' + profile + ', horizon: ' + horizon + '. Reponds avec UNIQUEMENT du JSON brut, sans backticks, sans markdown, juste le JSON: {"nom":"...","isin":"' + isin + '","gestionnaire":"...","categorie":"...","verdict":"ENTRER","verdict_resume":"...","contexte_macro":"...","analyse_fonds":"...","opportunite":"...","risques":["..."],"catalyseurs":["..."],"adequation_profil":"...","signaux":{"momentum":"positif","valorisation":"attractive","risque_devise":"non","sensibilite_taux":"moyenne","liquidite":"haute"},"perf_historique":{"ytd":"...%","1an":"...%","3ans":"...%","5ans":"...%","10ans":"...%"}}'
 
     const response = await (client.messages.create as any)({
       model: 'claude-sonnet-4-6',
