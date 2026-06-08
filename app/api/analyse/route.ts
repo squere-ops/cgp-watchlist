@@ -36,36 +36,31 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const prompt = 'Tu es analyste CGP français. Analyse le fonds ISIN ' + isin + ' (profil ' + profile + ', horizon ' + horizon + '). Reponds avec un JSON valide uniquement, sans texte avant ou apres: {"nom":"...","isin":"' + isin + '","gestionnaire":"...","categorie":"...","verdict":"ENTRER","verdict_resume":"...","contexte_macro":"...","analyse_fonds":"...","opportunite":"...","risques":["..."],"catalyseurs":["..."],"adequation_profil":"...","signaux":{"momentum":"positif","valorisation":"attractive","risque_devise":"non","sensibilite_taux":"moyenne","liquidite":"haute"}}'
+    const prompt = 'Recherche le fonds dont le code ISIN est EXACTEMENT ' + isin + '. Utilise cet ISIN pour trouver le bon fonds sur quantalys.com ou morningstar.fr. Ne confonds pas avec un autre fonds. Profil investisseur: ' + profile + ', horizon: ' + horizon + '. Reponds en JSON uniquement sans backticks: {"nom":"nom exact du fonds","isin":"' + isin + '","gestionnaire":"societe de gestion","categorie":"type","verdict":"ENTRER","verdict_resume":"resume","contexte_macro":"contexte","analyse_fonds":"analyse","opportunite":"opportunite","risques":["r1","r2"],"catalyseurs":["c1","c2"],"adequation_profil":"adequation","signaux":{"momentum":"positif","valorisation":"attractive","risque_devise":"non","sensibilite_taux":"moyenne","liquidite":"haute"}}'
 
-    const response = await client.messages.create({
+    const response = await (client.messages.create as any)({
       model: 'claude-sonnet-4-6',
       max_tokens: 2000,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
       messages: [{ role: 'user', content: prompt }],
     })
 
     let text = ''
     for (const block of response.content) {
-      if (block.type === 'text') text += block.text
+      if ((block as any).type === 'text') text += (block as any).text
     }
 
-    const clean = text.replace(/```json/g, '').replace(/```/g, '').trim()
+    const clean = text.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim()
     const start = clean.indexOf('{')
     const end = clean.lastIndexOf('}')
     if (start === -1 || end === -1) {
-      return NextResponse.json({ error: 'Reponse: ' + text.slice(0, 300) }, { status: 500 })
+      return NextResponse.json({ error: 'Pas de JSON: ' + text.slice(0, 200) }, { status: 500 })
     }
 
-    let analyse
-    try {
-      analyse = JSON.parse(clean.slice(start, end + 1))
-    } catch {
-      const fixed = clean.slice(start).replace(/,\s*$/, '').replace(/,\s*}/, '}')
-      analyse = JSON.parse(fixed.slice(0, fixed.lastIndexOf('}') + 1))
-    }
-    if (!analyse.verdict) analyse.verdict = 'ATTENDRE'
-    const verdictMap: any = {'ENTRER':'ENTRER','ATTENDRE':'ATTENDRE','ÉVITER':'ÉVITER','NEUTRE':'ATTENDRE','NE_PAS_ENTRER':'ÉVITER','EVITER':'ÉVITER'}
+    const analyse = JSON.parse(clean.slice(start, end + 1))
+    const verdictMap: any = {'ENTRER':'ENTRER','ATTENDRE':'ATTENDRE','ÉVITER':'ÉVITER','EVITER':'ÉVITER','NEUTRE':'ATTENDRE','NE_PAS_ENTRER':'ÉVITER'}
     analyse.verdict = verdictMap[analyse.verdict] || 'ATTENDRE'
+
     const { data: fund } = await supabase.from('funds').select('id').eq('isin', isin).single()
     try {
       await supabase.from('analyse_history').insert({
