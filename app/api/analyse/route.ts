@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       if ((block as any).type === 'text') text += (block as any).text
     }
 
-    const clean = text.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim()
+    const clean = text.replace(/[`]{3}json/g, '').replace(/[`]{3}/g, '').trim()
     const start = clean.indexOf('{')
     const end = clean.lastIndexOf('}')
     if (start === -1 || end === -1) {
