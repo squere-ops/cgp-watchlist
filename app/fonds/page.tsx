@@ -14,7 +14,6 @@ export default function FondsPage() {
   const [vlLatest, setVlLatest] = useState<any>({})
   const [analyses, setAnalyses] = useState<any>({})
   const [editFund, setEditFund] = useState<any>(null)
-  const [detailAnalyse, setDetailAnalyse] = useState<any>(null)
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
 
@@ -40,15 +39,17 @@ export default function FondsPage() {
     (!search || f.name.toLowerCase().includes(search.toLowerCase()) || (f.isin || '').includes(search.toUpperCase()))
   )
 
-  const deleteFund = async (id: string) => { if (!confirm("Supprimer ce fonds ?")) return; await supabase.from("funds").delete().eq("id", id); setEditFund(null); load(); };
-
   const saveEdit = async () => {
     if (!editFund) return
     await supabase.from('funds').update({
-      name: editFund.name, isin: editFund.isin || null,
-      manager: editFund.manager || null, category: editFund.category, notes: editFund.notes || null
+      name: editFund.name,
+      isin: editFund.isin || null,
+      manager: editFund.manager || null,
+      category: editFund.category,
+      notes: editFund.notes || null
     }).eq('id', editFund.id)
-    setEditFund(null); load()
+    setEditFund(null)
+    load()
   }
 
   const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -56,7 +57,6 @@ export default function FondsPage() {
     const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000)
     return m < 60 ? m + ' min' : m < 1440 ? Math.floor(m / 60) + 'h' : Math.floor(m / 1440) + 'j'
   }
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
   return (
     <div style={{ fontFamily: 'Instrument Sans, sans-serif', background: '#f5f2ed', minHeight: '100vh' }}>
@@ -100,8 +100,7 @@ export default function FondsPage() {
             const vcfg = verdict ? VC[verdict] : null
 
             return (
-              <div key={f.id} style={{ background: 'white', border: `1px solid ${vcfg ? vcfg.border : 'rgba(15,14,13,0.12)'}`, borderRadius: 3, padding: 22, position: 'relative', overflow: 'hidden', cursor: vcfg ? 'pointer' : 'default' }}
-                onClick={() => vcfg && setDetailAnalyse({ fund: f, analyse })}>
+              <div key={f.id} style={{ background: 'white', border: `1px solid ${vcfg ? vcfg.border : 'rgba(15,14,13,0.12)'}`, borderRadius: 3, padding: 22, position: 'relative', overflow: 'hidden' }}>
                 {vcfg && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: vcfg.color }} />}
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, marginTop: vcfg ? 8 : 0 }}>
@@ -135,10 +134,13 @@ export default function FondsPage() {
                 )}
 
                 <div style={{ paddingTop: 10, borderTop: '1px solid rgba(15,14,13,0.12)', marginBottom: 12 }}>
-                  {vl ? <><span style={{ fontFamily: 'DM Serif Display, serif', fontSize: 16 }}>{fmt(vl.vl)}</span><span style={{ fontSize: 11, color: '#6b7c6e', marginLeft: 2 }}>€</span><div style={{ fontFamily: 'DM Mono, monospace', fontSize: 9, color: '#a8b8aa', marginTop: 2 }}>{new Date(vl.recorded_at).toLocaleDateString('fr-FR')}</div></> : <div style={{ fontSize: 11, color: '#a8b8aa', fontStyle: 'italic' }}>VL non renseignée</div>}
+                  {vl
+                    ? <><span style={{ fontFamily: 'DM Serif Display, serif', fontSize: 16 }}>{fmt(vl.vl)}</span><span style={{ fontSize: 11, color: '#6b7c6e', marginLeft: 2 }}>€</span><div style={{ fontFamily: 'DM Mono, monospace', fontSize: 9, color: '#a8b8aa', marginTop: 2 }}>{new Date(vl.recorded_at).toLocaleDateString('fr-FR')}</div></>
+                    : <div style={{ fontSize: 11, color: '#a8b8aa', fontStyle: 'italic' }}>VL non renseignée</div>
+                  }
                 </div>
 
-                <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
+                <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => setEditFund({ ...f })} style={{ fontFamily: 'DM Mono, monospace', fontSize: 9, color: '#6b7c6e', border: '1px solid rgba(15,14,13,0.12)', background: 'none', padding: '4px 10px', borderRadius: 2, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1 }}>✏ Éditer</button>
                   {f.isin && <Link href={`/analyse?isin=${f.isin}`}><button style={{ fontFamily: 'DM Mono, monospace', fontSize: 9, color: '#b8975a', border: '1px solid #b8975a', background: 'none', padding: '4px 10px', borderRadius: 2, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1 }}>✦ Analyser</button></Link>}
                 </div>
@@ -148,73 +150,6 @@ export default function FondsPage() {
         </div>
       </main>
 
-      {/* Modal détail analyse */}
-      {detailAnalyse && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,14,13,.6)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }} onClick={() => setDetailAnalyse(null)}>
-          <div style={{ background: '#f5f2ed', border: '1px solid rgba(15,14,13,0.25)', borderRadius: 4, padding: 36, maxWidth: 700, width: '95%', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }} onClick={e => e.stopPropagation()}>
-            <button onClick={() => setDetailAnalyse(null)} style={{ position: 'absolute', top: 16, right: 20, border: 'none', background: 'none', fontSize: 18, cursor: 'pointer', color: '#6b7c6e' }}>✕</button>
-            
-            {(() => {
-              const { fund, analyse } = detailAnalyse
-              const aj = analyse.analyse_json
-              const vcfg = VC[analyse.verdict]
-              return (
-                <>
-                  <div style={{ marginBottom: 20 }}>
-                    <div style={{ fontFamily: 'DM Serif Display, serif', fontSize: 24, marginBottom: 4 }}>{aj?.nom || fund.name}</div>
-                    <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#6b7c6e' }}>{fund.isin} · {aj?.gestionnaire || fund.manager} · {aj?.categorie || fund.category}</div>
-                    <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: '#a8b8aa', marginTop: 4 }}>{fmtDate(analyse.created_at)}</div>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, padding: '16px 20px', background: vcfg?.bg, border: `1px solid ${vcfg?.border}`, borderRadius: 3 }}>
-                    <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 16, fontWeight: 700, color: vcfg?.color }}>{vcfg?.emoji} {analyse.verdict}</div>
-                    <div style={{ fontSize: 14, color: vcfg?.color, flex: 1 }}>{aj?.verdict_resume}</div>
-                  </div>
-
-                  {aj?.signaux && (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(130px,1fr))', gap: 8, marginBottom: 20 }}>
-                      {Object.entries(aj.signaux).map(([k, v]: any) => (
-                        <div key={k} style={{ background: 'white', padding: '10px 12px', borderRadius: 2, border: '1px solid rgba(15,14,13,0.12)' }}>
-                          <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 9, textTransform: 'uppercase', letterSpacing: 1.5, color: '#6b7c6e', marginBottom: 4 }}>{k.replace(/_/g, ' ')}</div>
-                          <div style={{ fontSize: 12, fontWeight: 600 }}>{v}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {[['Contexte macro', aj?.contexte_macro], ['Analyse du fonds', aj?.analyse_fonds], ["Opportunité d'entrée", aj?.opportunite], ['Adéquation profil', aj?.adequation_profil]].map(([titre, contenu]) => contenu && (
-                    <div key={String(titre)} style={{ marginBottom: 16 }}>
-                      <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: '#b8975a', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>{titre}</div>
-                      <p style={{ fontSize: 13, lineHeight: 1.75, color: '#2a2928' }}>{contenu}</p>
-                    </div>
-                  ))}
-
-                  {aj?.risques?.length > 0 && (
-                    <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: '#b8975a', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Risques</div>
-                      <ul style={{ paddingLeft: 18 }}>{aj.risques.map((r: string, i: number) => <li key={i} style={{ fontSize: 13, lineHeight: 1.75, marginBottom: 4 }}>{r}</li>)}</ul>
-                    </div>
-                  )}
-
-                  {aj?.catalyseurs?.length > 0 && (
-                    <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: '#b8975a', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Catalyseurs</div>
-                      <ul style={{ paddingLeft: 18 }}>{aj.catalyseurs.map((c: string, i: number) => <li key={i} style={{ fontSize: 13, lineHeight: 1.75, marginBottom: 4 }}>{c}</li>)}</ul>
-                    </div>
-                  )}
-
-                  <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-                    <Link href={`/analyse?isin=${fund.isin}`}><button style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', padding: '10px 20px', borderRadius: 2, cursor: 'pointer', border: 'none', background: 'linear-gradient(135deg,#b8975a,#7a5e28)', color: 'white' }}>✦ Relancer l'analyse</button></Link>
-                    <button onClick={() => setDetailAnalyse(null)} style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, padding: '10px 20px', borderRadius: 2, cursor: 'pointer', background: 'none', color: '#6b7c6e', border: '1px solid rgba(15,14,13,0.12)' }}>Fermer</button>
-                  </div>
-                </>
-              )
-            })()}
-          </div>
-        </div>
-      )}
-
-      {/* Edit modal */}
       {editFund && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,14,13,.5)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setEditFund(null)}>
           <div style={{ background: '#f5f2ed', border: '1px solid rgba(15,14,13,0.25)', borderRadius: 4, padding: 32, maxWidth: 480, width: '92%' }} onClick={e => e.stopPropagation()}>
@@ -227,7 +162,7 @@ export default function FondsPage() {
             ))}
             <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
               <button style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', padding: '10px 20px', borderRadius: 2, cursor: 'pointer', border: 'none', background: '#0f0e0d', color: '#f5f2ed' }} onClick={saveEdit}>Sauvegarder</button>
-              <button style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, padding: '10px 20px', borderRadius: 2, cursor: 'pointer', background: 'none', color: '#6b7c6e', border: '1px solid rgba(15,14,13,0.12)' }} onClick={() => setEditFund(null)}>Annuler</button><button style={{ fontFamily: "DM Mono, monospace", fontSize: 11, padding: "10px 20px", borderRadius: 2, cursor: "pointer", background: "#c45c3a", color: "white", border: "none", marginLeft: "auto" }} onClick={() => deleteFund(editFund.id)}>🗑 Supprimer</button>
+              <button style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, padding: '10px 20px', borderRadius: 2, cursor: 'pointer', background: 'none', color: '#6b7c6e', border: '1px solid rgba(15,14,13,0.12)' }} onClick={() => setEditFund(null)}>Annuler</button>
             </div>
           </div>
         </div>
