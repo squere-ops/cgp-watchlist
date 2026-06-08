@@ -154,6 +154,7 @@ export default function FondsPage() {
 
                 <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
                   <button onClick={() => setEditFund({ ...f })} style={{ fontFamily: 'DM Mono, monospace', fontSize: 9, color: '#6b7c6e', border: '1px solid rgba(15,14,13,0.12)', background: 'none', padding: '4px 10px', borderRadius: 2, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1 }}>✏ Éditer</button>
+                  {f.isin && <button onClick={(e)=>{e.stopPropagation();fetchVL(f)}} disabled={vlLoading.includes(f.id)} style={{fontFamily:'DM Mono, monospace',fontSize:9,color:'#3d5a7a',border:'1px solid #3d5a7a',background:'none',padding:'4px 10px',borderRadius:2,cursor:'pointer'}}>{vlLoading.includes(f.id)?'...':'↻ VL'}</button>}
                   {f.isin && <Link href={`/analyse?isin=${f.isin}`}><button style={{ fontFamily: 'DM Mono, monospace', fontSize: 9, color: '#b8975a', border: '1px solid #b8975a', background: 'none', padding: '4px 10px', borderRadius: 2, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1 }}>✦ Analyser</button></Link>}
                 </div>
               </div>
