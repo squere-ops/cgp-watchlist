@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
       model: 'claude-sonnet-4-6',
       max_tokens: 200,
       tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      messages: [{ role: 'user', content: 'Trouve la valeur liquidative (VL) la plus recente du fonds ' + fundName + ' ISIN ' + isin + ' sur quantalys.com ou morningstar.fr. Reponds JSON uniquement: {"vl":123.45,"date":"YYYY-MM-DD"}' }],
+      messages: [{ role: 'user', content: 'Quelle est la derniere valeur liquidative du fonds ISIN ' + isin + ' (' + fundName + ')? Reponds avec seulement ce JSON: {"vl":123.45,"date":"2026-06-08"}' }],
     })
 
     let text = ''
