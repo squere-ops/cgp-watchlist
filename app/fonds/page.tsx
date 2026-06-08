@@ -49,6 +49,21 @@ export default function FondsPage() {
     setEditFund(null); load()
   }
 
+
+  const fetchVL = async (fund: any) => {
+    if (!fund.isin) return
+    setVlLoading(ids => [...ids, fund.id])
+    try {
+      const res = await fetch('/api/vl-single', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fundId: fund.id, fundName: fund.name, isin: fund.isin })
+      })
+      const data = await res.json()
+      if (data.vl) load()
+    } catch {}
+    setVlLoading(ids => ids.filter(id => id !== fund.id))
+  }
   const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const timeAgo = (d: string) => {
     const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000)
