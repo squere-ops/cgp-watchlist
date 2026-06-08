@@ -49,13 +49,15 @@ export async function POST(req: NextRequest) {
       if (block.type === 'text') text += block.text
     }
 
-    const start = text.indexOf('{')
-    const end = text.lastIndexOf('}')
+    const clean = text.replace(/```json/g, '').replace(/```/g, '').trim()
+    const start = clean.indexOf('{')
+    const end = clean.lastIndexOf('}')
     if (start === -1 || end === -1) {
       return NextResponse.json({ error: 'Reponse: ' + text.slice(0, 300) }, { status: 500 })
     }
 
-    const analyse = JSON.parse(text.slice(start, end + 1))
+    const analyse = JSON.parse(clean.slice(start, end + 1))
+    if (!['ENTRER','ATTENDRE','ÉVITER'].includes(analyse.verdict)) analyse.verdict = 'ATTENDRE'
     const { data: fund } = await supabase.from('funds').select('id').eq('isin', isin).single()
     try {
       await supabase.from('analyse_history').insert({
